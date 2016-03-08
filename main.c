@@ -5,7 +5,11 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#if defined(__OpenBSD__)
+#include <soundcard.h>
+#else
 #include <sys/soundcard.h>
+#endif
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
