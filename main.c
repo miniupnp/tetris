@@ -1,3 +1,4 @@
+#include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -1361,13 +1362,14 @@ int config_io(void) {
 
 	ret = tcgetattr(0, &old_tios);
 	if (-1 == ret) {
-		WRITES("error : tcgetattr");
+		WRITES("error : tcgetattr\n");
 		return -1;
 	}
+	memcpy(&new_tios, &old_tios, sizeof(new_tios));
 	cfmakeraw(&new_tios);
 	ret = tcsetattr(0, TCSANOW, &new_tios);
 	if (-1 == ret) {
-		WRITES("error : tcsetattr");
+		WRITES("error : tcsetattr\n");
 		return -1;
 	}
 
