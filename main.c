@@ -401,13 +401,48 @@ struct {
 	.hit =      0,
 };
 
+#define WRITEBUFFERLEN (4096)
+/*
+ * write on STDOUT (file descriptor 1)
+ */
+void bufferedwrite(const char * s, size_t n) {
+	/* circular buffer */
+	static char buffer[WRITEBUFFERLEN];
+	static unsigned int written_index = 0;
+	static unsigned int data_index = 0;
+	ssize_t written;
+
+	/* first fill circular buffer with new data */
+	while (data_index + n > WRITEBUFFERLEN) {
+		size_t m = WRITEBUFFERLEN - data_index;
+		memcpy(buffer + data_index, s, m);
+		data_index = 0;
+		s += m;
+		n -= m;
+	}
+	if (n > 0) {
+		memcpy(buffer + data_index, s, n);
+		data_index = (data_index + n) % WRITEBUFFERLEN;
+	}
+	while (data_index < written_index) {
+		written = write(1, buffer + written_index, WRITEBUFFERLEN - written_index);
+		if(written <= 0) return;	/* should try again later */
+		written_index = (written_index + (unsigned)written) % WRITEBUFFERLEN;
+	}
+	while (data_index > written_index) {
+		written = write(1, buffer + written_index, data_index - written_index);
+		if(written <= 0) return;	/* should try again later */
+		written_index = (written_index + (unsigned)written) % WRITEBUFFERLEN;
+	}
+}
+
 /**
  * \def WRITE
  * \brief Writes a single char to standard output
  */
 #define WRITE(c) do { \
 	char _buf = (char)(c); \
-	write(1, &_buf, 1); \
+	bufferedwrite(&_buf, 1); \
 } while (0)
 
 /**
@@ -419,7 +454,7 @@ struct {
 	unsigned _i = 0; \
 	while (s[_i]) \
 		_i++; \
-	write(1, s, _i); \
+	bufferedwrite(s, _i); \
 } while(0)
 
 enum sfx {
